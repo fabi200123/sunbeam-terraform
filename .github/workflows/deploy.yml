@@ -17,7 +17,6 @@ jobs:
           provider: microk8s
           channel: 1.28-strict/stable
           juju-channel: 3.2/stable
-          bootstrap-options: --agent-version=3.2.0
           microk8s-addons: hostpath-storage dns rbac metallb:10.64.140.40-10.64.140.49
       - name: Install dependencies
         run: |
@@ -25,9 +24,7 @@ jobs:
           sudo snap install --classic juju-wait
       - name: Apply terraform
         run: |
-          # Temporary workaround as config option enable-telemetry-notifications is
-          # available only on 2023.1/edge channel
-          echo '{"openstack-channel": "2023.1/edge"}' > terraform.tfvars.json
+          echo '{"openstack-channel": "2023.1/candidate", "enable-vault": true, "enable-barbican": true}' > terraform.tfvars.json
           terraform init
           terraform apply -auto-approve
           juju model-config -m openstack automatically-retry-hooks=true
