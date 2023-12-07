@@ -15,7 +15,7 @@
 
 variable "openstack-channel" {
   description = "Operator channel for OpenStack deployment"
-  default     = "2023.1/stable"
+  default     = "2023.2/edge"
 }
 
 variable "mysql-channel" {
@@ -36,7 +36,12 @@ variable "rabbitmq-channel" {
 
 variable "ovn-channel" {
   description = "Operator channel for OVN deployment"
-  default     = "23.03/stable"
+  default     = "23.09/edge"
+}
+
+variable "traefik-channel" {
+  description = "Operator channel for traefik deployment"
+  default     = "1.0/candidate"
 }
 
 variable "model" {
@@ -101,10 +106,10 @@ variable "enable-heat" {
   default     = false
 }
 
-# Temporary channel for heat until 2023.1/stable is released.
+# Temporary channel for heat until 2023.2/stable is released.
 variable "heat-channel" {
   description = "Operator channel for OpenStack Heat deployment"
-  default     = "2023.1/edge"
+  default     = "2023.2/edge"
 }
 
 variable "enable-telemetry" {
@@ -112,10 +117,20 @@ variable "enable-telemetry" {
   default     = false
 }
 
-# Temporary channel for telemetry services until 2023.1/stable is released.
+# Temporary channel for telemetry services until 2023.2/stable is released.
 variable "telemetry-channel" {
   description = "Operator channel for OpenStack Telemetry deployment"
-  default     = "2023.1/edge"
+  default     = "2023.2/edge"
+}
+
+variable "prometheus-metrics-offer-url" {
+  description = "Offer URL from prometheus-k8s:metrics-endpoint application"
+  default     = ""
+}
+
+variable "grafana-dashboard-offer-url" {
+  description = "Offer URL from grafana-k8s:grafana-dashboard application"
+  default     = ""
 }
 
 variable "enable-octavia" {
@@ -123,10 +138,10 @@ variable "enable-octavia" {
   default     = false
 }
 
-# Temporary channel for octavia until 2023.1/stable is released.
+# Temporary channel for octavia until 2023.2/stable is released.
 variable "octavia-channel" {
   description = "Operator channel for OpenStack Octavia deployment"
-  default     = "2023.1/edge"
+  default     = "2023.2/edge"
 }
 variable "enable-designate" {
   description = "Enable OpenStack Designate service"
@@ -135,12 +150,12 @@ variable "enable-designate" {
 
 variable "designate-channel" {
   description = "Operator channel for OpenStack Designate deployment"
-  default     = "2023.1/edge"
+  default     = "2023.2/edge"
 }
 
 variable "bind-channel" {
   description = "Operator channel for Bind deployment"
-  default     = "latest/edge"
+  default     = "9/edge"
 }
 
 variable "nameservers" {
@@ -169,5 +184,32 @@ variable "enable-barbican" {
 
 variable "barbican-channel" {
   description = "Operator channel for OpenStack Barbican deployment"
-  default     = "2023.1/edge"
+  default     = "2023.2/edge"
+}
+
+variable "enable-magnum" {
+  description = "Enable OpenStack Magnum service"
+  default     = false
+}
+
+variable "magnum-channel" {
+  description = "Operator channel for OpenStack Magnum deployment"
+  default     = "2023.2/edge"
+}
+
+variable "ldap-channel" {
+  description = "Operator channel for Keystone LDAP deployment"
+  default     = "2023.2/edge"
+}
+
+variable "ldap-apps" {
+  description = "LDAP Apps and their config flags"
+  type        = map(map(string))
+  default     = {}
+}
+
+variable "horizon-plugins" {
+  description = "List of horizon plugin to enable."
+  type        = list(string)
+  default     = []
 }

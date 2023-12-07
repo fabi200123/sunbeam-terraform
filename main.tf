@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.8.0"
+      version = "= 0.10.0"
     }
   }
 }
@@ -127,6 +127,9 @@ module "horizon" {
   ingress-public       = juju_application.traefik-public.name
   scale                = var.os-api-scale
   mysql-router-channel = var.mysql-router-channel
+  resource-configs = {
+    plugins = jsonencode(var.horizon-plugins)
+  }
 }
 
 module "neutron" {
@@ -165,8 +168,7 @@ resource "juju_application" "traefik" {
 
   charm {
     name    = "traefik-k8s"
-    channel = "1.0/candidate"
-    series  = "focal"
+    channel = var.traefik-channel
   }
 
   units = var.ingress-scale
@@ -179,8 +181,7 @@ resource "juju_application" "traefik-public" {
 
   charm {
     name    = "traefik-k8s"
-    channel = "1.0/candidate"
-    series  = "focal"
+    channel = var.traefik-channel
   }
 
   units = var.ingress-scale
@@ -194,7 +195,6 @@ resource "juju_application" "certificate-authority" {
   charm {
     name    = "self-signed-certificates"
     channel = "latest/beta"
-    series  = "jammy"
   }
 
   config = {
@@ -361,44 +361,39 @@ module "heat" {
   mysql                = var.many-mysql ? module.mysql-heat[0].name["heat"] : "mysql"
   keystone             = module.keystone.name
   keystone-ops         = module.keystone.name
-  ingress-internal     = juju_application.traefik.name
-  ingress-public       = juju_application.traefik-public.name
+  ingress-internal     = ""
+  ingress-public       = ""
   scale                = var.os-api-scale
   mysql-router-channel = var.mysql-router-channel
 }
 
-module "heat-cfn" {
-  count                = var.enable-heat ? 1 : 0
-  source               = "./modules/openstack-api"
-  charm                = "heat-k8s"
-  name                 = "heat-cfn"
-  model                = juju_model.sunbeam.name
-  channel              = var.heat-channel
-  rabbitmq             = module.rabbitmq.name
-  mysql                = var.many-mysql ? module.mysql-heat[0].name["heat"] : "mysql"
-  keystone             = module.keystone.name
-  keystone-ops         = module.keystone.name
-  ingress-internal     = juju_application.traefik.name
-  ingress-public       = juju_application.traefik-public.name
-  scale                = var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  resource-configs = {
-    api_service = "heat-api-cfn"
-  }
-}
-
-resource "juju_integration" "heat-to-heat-cfn" {
+resource "juju_integration" "heat-to-ingress-public" {
   count = var.enable-heat ? 1 : 0
   model = juju_model.sunbeam.name
 
   application {
     name     = module.heat[count.index].name
-    endpoint = "heat-service"
+    endpoint = "traefik-route-public"
   }
 
   application {
-    name     = module.heat-cfn[count.index].name
-    endpoint = "heat-config"
+    name     = juju_application.traefik-public.name
+    endpoint = "traefik-route"
+  }
+}
+
+resource "juju_integration" "heat-to-ingress-internal" {
+  count = var.enable-heat ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.heat[count.index].name
+    endpoint = "traefik-route-internal"
+  }
+
+  application {
+    name     = juju_application.traefik.name
+    endpoint = "traefik-route"
   }
 }
 
@@ -468,7 +463,6 @@ resource "juju_application" "ceilometer" {
   charm {
     name    = "ceilometer-k8s"
     channel = var.telemetry-channel
-    series  = "jammy"
   }
 
   units = var.ha-scale
@@ -524,6 +518,62 @@ resource "juju_offer" "ceilometer-offer" {
   model            = juju_model.sunbeam.name
   application_name = juju_application.ceilometer[count.index].name
   endpoint         = "ceilometer-service"
+}
+
+resource "juju_application" "openstack-exporter" {
+  count = var.enable-telemetry ? 1 : 0
+  name  = "openstack-exporter"
+  model = juju_model.sunbeam.name
+
+  charm {
+    name    = "openstack-exporter-k8s"
+    channel = var.telemetry-channel
+  }
+
+  units = 1
+}
+
+resource "juju_integration" "openstack-exporter-to-keystone" {
+  count = var.enable-telemetry ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.keystone.name
+    endpoint = "identity-ops"
+  }
+
+  application {
+    name     = juju_application.openstack-exporter[count.index].name
+    endpoint = "identity-ops"
+  }
+}
+
+resource "juju_integration" "openstack-exporter-to-metrics-endpoint" {
+  count = (var.enable-telemetry && var.prometheus-metrics-offer-url != "") ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = juju_application.openstack-exporter[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    offer_url = var.prometheus-metrics-offer-url
+  }
+}
+
+resource "juju_integration" "openstack-exporter-to-grafana-dashboard" {
+  count = (var.enable-telemetry && var.grafana-dashboard-offer-url != "") ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = juju_application.openstack-exporter[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    offer_url = var.grafana-dashboard-offer-url
+  }
 }
 
 module "mysql-octavia" {
@@ -591,9 +641,8 @@ resource "juju_application" "bind" {
   model = juju_model.sunbeam.name
 
   charm {
-    name    = "bind9-k8s"
+    name    = "designate-bind-k8s"
     channel = var.bind-channel
-    series  = "jammy"
   }
 
   units = var.ha-scale
@@ -653,7 +702,6 @@ resource "juju_application" "vault" {
     name     = "vault-k8s"
     channel  = var.vault-channel
     revision = 44
-    series   = "jammy"
   }
 
   units = 1
@@ -680,6 +728,7 @@ module "barbican" {
   rabbitmq             = module.rabbitmq.name
   mysql                = var.many-mysql ? module.mysql-barbican[0].name["barbican"] : "mysql"
   keystone             = module.keystone.name
+  keystone-ops         = module.keystone.name
   ingress-internal     = juju_application.traefik.name
   ingress-public       = juju_application.traefik-public.name
   scale                = var.os-api-scale
@@ -698,5 +747,65 @@ resource "juju_integration" "barbican-to-vault" {
   application {
     name     = juju_application.vault[count.index].name
     endpoint = "vault-kv"
+  }
+}
+
+module "mysql-magnum" {
+  count      = var.enable-magnum ? (var.many-mysql ? 1 : 0) : 0
+  source     = "./modules/mysql"
+  model      = juju_model.sunbeam.name
+  name       = "mysql"
+  channel    = var.mysql-channel
+  scale      = var.ha-scale
+  many-mysql = var.many-mysql
+  services   = ["magnum"]
+}
+
+module "magnum" {
+  count                = var.enable-magnum ? 1 : 0
+  source               = "./modules/openstack-api"
+  charm                = "magnum-k8s"
+  name                 = "magnum"
+  model                = juju_model.sunbeam.name
+  channel              = var.magnum-channel
+  rabbitmq             = module.rabbitmq.name
+  mysql                = var.many-mysql ? module.mysql-magnum[0].name["magnum"] : "mysql"
+  keystone             = module.keystone.name
+  keystone-ops         = module.keystone.name
+  ingress-internal     = juju_application.traefik.name
+  ingress-public       = juju_application.traefik-public.name
+  scale                = var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  resource-configs = {
+    "cluster-user-trust" = "true"
+  }
+}
+
+resource "juju_application" "ldap-apps" {
+  for_each = var.ldap-apps
+  name     = "keystone-ldap-${each.key}"
+  model    = var.model
+
+  charm {
+    name    = "keystone-ldap-k8s"
+    channel = var.ldap-channel
+  }
+  # This is a config charm so 1 unit is enough
+  units  = 1
+  config = each.value
+}
+
+resource "juju_integration" "ldap-to-keystone" {
+  for_each = var.ldap-apps
+  model    = juju_model.sunbeam.name
+
+  application {
+    name     = "keystone-ldap-${each.key}"
+    endpoint = "domain-config"
+  }
+
+  application {
+    name     = module.keystone.name
+    endpoint = "domain-config"
   }
 }
