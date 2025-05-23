@@ -814,7 +814,7 @@ resource "juju_integration" "ceilometer-to-keystone-cacert" {
 
   application {
     name     = juju_application.ceilometer[count.index].name
-    endpoint = "receive-ca-cert"
+    endpoint = "certificates"
   }
 }
 
@@ -897,7 +897,7 @@ resource "juju_integration" "openstack-exporter-to-keystone-cacert" {
 
   application {
     name     = juju_application.openstack-exporter[count.index].name
-    endpoint = "receive-ca-cert"
+    endpoint = "certificates"
   }
 }
 
@@ -1094,7 +1094,7 @@ resource "juju_application" "vault" {
   name  = "vault"
 
   charm {
-    name     = "vault-k8s"
+    name     = "vault"
     channel  = var.vault-channel
     revision = var.vault-revision
   }
@@ -1214,21 +1214,6 @@ resource "juju_integration" "ldap-to-keystone" {
   }
 }
 
-resource "juju_application" "manual-tls-certificates" {
-  count = (var.traefik-to-tls-provider == "manual-tls-certificates") ? 1 : 0
-  name  = "manual-tls-certificates"
-  model = juju_model.sunbeam.name
-
-  charm {
-    name     = "manual-tls-certificates"
-    channel  = var.manual-tls-certificates-channel
-    revision = var.manual-tls-certificates-revision
-  }
-
-  units  = 1 # does not scale
-  config = var.manual-tls-certificates-config
-}
-
 resource "juju_integration" "traefik-public-to-tls-provider" {
   count = var.enable-tls-for-public-endpoint ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
   model = juju_model.sunbeam.name
@@ -1239,8 +1224,8 @@ resource "juju_integration" "traefik-public-to-tls-provider" {
   }
 
   application {
-    name     = var.traefik-to-tls-provider
-    endpoint = "certificates"
+    name     = "vault"
+    endpoint = "send-ca-cert"
   }
 }
 
@@ -1254,8 +1239,8 @@ resource "juju_integration" "traefik-to-tls-provider" {
   }
 
   application {
-    name     = var.traefik-to-tls-provider
-    endpoint = "certificates"
+    name     = "vault"
+    endpoint = "send-ca-cert"
   }
 }
 
@@ -1269,8 +1254,8 @@ resource "juju_integration" "traefik-rgw-to-tls-provider" {
   }
 
   application {
-    name     = var.traefik-to-tls-provider
-    endpoint = "certificates"
+    name     = "vault"
+    endpoint = "send-ca-cert"
   }
 }
 
@@ -1316,7 +1301,7 @@ resource "juju_integration" "tempest-to-keystone-cacert" {
 
   application {
     name     = juju_application.tempest[count.index].name
-    endpoint = "receive-ca-cert"
+    endpoint = "certificates"
   }
 }
 
