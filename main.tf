@@ -1240,7 +1240,7 @@ resource "juju_integration" "traefik-public-to-tls-provider" {
 
   application {
     name     = var.traefik-to-tls-provider
-    endpoint = "certificates"
+    endpoint = "vault-pki"
   }
 }
 
@@ -1255,7 +1255,7 @@ resource "juju_integration" "traefik-to-tls-provider" {
 
   application {
     name     = var.traefik-to-tls-provider
-    endpoint = "certificates"
+    endpoint = "vault-pki"
   }
 }
 
@@ -1270,7 +1270,7 @@ resource "juju_integration" "traefik-rgw-to-tls-provider" {
 
   application {
     name     = var.traefik-to-tls-provider
-    endpoint = "certificates"
+    endpoint = "vault-pki"
   }
 }
 
