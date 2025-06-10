@@ -1215,7 +1215,7 @@ resource "juju_integration" "ldap-to-keystone" {
 }
 
 resource "juju_application" "manual-tls-certificates" {
-  count = (var.traefik-to-tls-provider == "manual-tls-certificates") ? 1 : 0
+  count = (var.traefik-to-tls-provider == null) ? 0 : 1
   name  = "manual-tls-certificates"
   model = juju_model.sunbeam.name
 
