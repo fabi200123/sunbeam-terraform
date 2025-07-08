@@ -288,7 +288,12 @@ resource "juju_application" "traefik" {
     revision = var.traefik-revision
   }
 
-  config             = var.traefik-config
+  config = merge(
+    var.traefik-config,
+    length(var.loadbalancer_annotations) > 0 && lookup(var.loadbalancer_annotations, "traefik-k8s", "") != "" ?
+    { loadbalancer_annotations = lookup(var.loadbalancer_annotations, "traefik-k8s", null) } :
+    {}
+  )
   storage_directives = var.traefik-storage
   units              = var.ingress-scale
 }
@@ -349,7 +354,12 @@ resource "juju_application" "traefik-public" {
     revision = var.traefik-revision
   }
 
-  config             = var.traefik-config
+  config = merge(
+    var.traefik-config,
+    lookup(var.loadbalancer_annotations, "traefik-public-k8s", "") != "" ?
+    { loadbalancer_annotations = lookup(var.loadbalancer_annotations, "traefik-public-k8s", null) } :
+    {}
+  )
   storage_directives = var.traefik-storage
   units              = var.ingress-scale
 }
@@ -411,7 +421,12 @@ resource "juju_application" "traefik-rgw" {
     revision = var.traefik-revision
   }
 
-  config             = var.traefik-config
+  config = merge(
+    var.traefik-config,
+    lookup(var.loadbalancer_annotations, "traefik-rgw-k8s", "") != "" ?
+    { loadbalancer_annotations = lookup(var.loadbalancer_annotations, "traefik-rgw-k8s", null) } :
+    {}
+  )
   storage_directives = var.traefik-storage
   units              = var.ingress-scale
 }

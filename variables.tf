@@ -920,3 +920,9 @@ variable "region" {
   type        = string
   default     = "RegionOne"
 }
+
+variable "loadbalancer_annotations" {
+  description = "Map of charm name -> MetalLB annotation string"
+  type        = map(string)
+  default     = {}
+}
