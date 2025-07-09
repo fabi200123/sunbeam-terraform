@@ -294,7 +294,7 @@ resource "juju_application" "traefik" {
   config = merge(
     var.traefik-config,
     local.traefik_lb_ip != "" ? {
-      "loadbalancer-annotations" = local.traefik_lb_ip
+      loadbalancer_annotations = local.traefik_lb_ip
     } : {}
   )
   storage_directives = var.traefik-storage
