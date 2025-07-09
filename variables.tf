@@ -920,3 +920,8 @@ variable "region" {
   type        = string
   default     = "RegionOne"
 }
+
+variable "loadbalancer_annotations" {
+  type = map(string)
+  default = {}
+}
