@@ -50,10 +50,10 @@ locals {
     for k, v in local.mysql-services : k => v != null ? "${k}-mysql" : local.single-mysql
   }
   grafana-agent-name = length(juju_application.grafana-agent) > 0 ? juju_application.grafana-agent[0].name : null
-  annotations_map = var.loadbalancer_annotations != "" ? jsondecode(var.loadbalancer_annotations) : {}
-  traefik_lb_ip       = lookup(local.annotations_map, "traefik-k8s", "")
-  traefik_public_lb_ip= lookup(local.annotations_map, "traefik-public", "")
-  traefik_rgw_lb_ip   = lookup(local.annotations_map, "traefik-rgw", "")
+  annotations_map       = var.loadbalancer_annotations
+  traefik_lb_ip         = lookup(local.annotations_map, "traefik-k8s", "")
+  traefik_public_lb_ip  = lookup(local.annotations_map, "traefik-public", "")
+  traefik_rgw_lb_ip     = lookup(local.annotations_map, "traefik-rgw", "")
 }
 
 data "juju_offer" "microceph" {
