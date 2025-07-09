@@ -50,6 +50,9 @@ locals {
     for k, v in local.mysql-services : k => v != null ? "${k}-mysql" : local.single-mysql
   }
   grafana-agent-name = length(juju_application.grafana-agent) > 0 ? juju_application.grafana-agent[0].name : null
+  traefik_lb_ip = lookup(var.loadbalancer_annotations, "traefik-k8s", "")
+  traefik_public_lb_ip = lookup(var.loadbalancer_annotations, "traefik-public", "")
+  traefik_rgw_lb_ip = lookup(var.loadbalancer_annotations, "traefik-rgw", "")
 }
 
 data "juju_offer" "microceph" {
@@ -290,8 +293,8 @@ resource "juju_application" "traefik" {
 
   config = merge(
     var.traefik-config,
-    var.loadbalancer_annotations["traefik-k8s"] != "" ? {
-      loadbalancer_annotations = var.loadbalancer_annotations["traefik-k8s"]
+    local.traefik_lb_ip != "" ? {
+      loadbalancer_annotations = "metallb.io/loadBalancerIPs:${local.traefik_lb_ip}"
     } : {}
   )
   storage_directives = var.traefik-storage
@@ -356,8 +359,8 @@ resource "juju_application" "traefik-public" {
 
   config = merge(
     var.traefik-config,
-    var.loadbalancer_annotations["traefik-public"] != "" ? {
-      loadbalancer_annotations = var.loadbalancer_annotations["traefik-public"]
+    local.traefik_public_lb_ip != "" ? {
+      loadbalancer_annotations = "metallb.io/loadBalancerIPs:${local.traefik_public_lb_ip}"
     } : {}
   )
   storage_directives = var.traefik-storage
@@ -423,8 +426,8 @@ resource "juju_application" "traefik-rgw" {
 
   config = merge(
     var.traefik-config,
-    var.loadbalancer_annotations["traefik-rgw"] != "" ? {
-      loadbalancer_annotations = var.loadbalancer_annotations["traefik-rgw"]
+    local.traefik_rgw_lb_ip != "" ? {
+      loadbalancer_annotations = "metallb.io/loadBalancerIPs:${local.traefik_rgw_lb_ip}"
     } : {}
   )
   storage_directives = var.traefik-storage
