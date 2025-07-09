@@ -294,7 +294,7 @@ resource "juju_application" "traefik" {
   config = merge(
     var.traefik-config,
     local.traefik_lb_ip != "" ? {
-      loadbalancer_annotations = "metallb.io/loadBalancerIPs:${local.traefik_lb_ip}"
+      "loadbalancer-annotations" = local.traefik_lb_ip
     } : {}
   )
   storage_directives = var.traefik-storage
@@ -360,7 +360,7 @@ resource "juju_application" "traefik-public" {
   config = merge(
     var.traefik-config,
     local.traefik_public_lb_ip != "" ? {
-      loadbalancer_annotations = "metallb.io/loadBalancerIPs:${local.traefik_public_lb_ip}"
+      loadbalancer_annotations = local.traefik_public_lb_ip
     } : {}
   )
   storage_directives = var.traefik-storage
@@ -427,7 +427,7 @@ resource "juju_application" "traefik-rgw" {
   config = merge(
     var.traefik-config,
     local.traefik_rgw_lb_ip != "" ? {
-      loadbalancer_annotations = "metallb.io/loadBalancerIPs:${local.traefik_rgw_lb_ip}"
+      loadbalancer_annotations = local.traefik_rgw_lb_ip
     } : {}
   )
   storage_directives = var.traefik-storage
